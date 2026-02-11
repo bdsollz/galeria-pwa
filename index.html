@@ -1,763 +1,667 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Galeria Pessoas</title>
-
-  <style>
-    :root {
-      --bg-color: #121212;
-      --card-radius: 16px;
-      --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    body {
-      margin: 0;
-      padding: 20px 10px;
-      background-color: var(--bg-color);
-      font-family: var(--font-main);
-      color: white;
-      padding-bottom: 120px;
-    }
-
-    h1 {
-      margin: 0 0 12px 10px;
-      font-size: 24px;
-      font-weight: 700;
-    }
-
-    .topbar {
-      display: flex;
-      gap: 10px;
-      padding: 0 10px 14px 10px;
-      align-items: center;
-    }
-
-    .search {
-      flex: 1;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid #2a2a2a;
-      background: #1b1b1b;
-      color: white;
-      outline: none;
-      box-sizing: border-box;
-    }
-
-    .mini-btn {
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid #2a2a2a;
-      background: #1b1b1b;
-      color: white;
-      font-weight: 700;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      white-space: nowrap;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      padding: 0 0 0 0;
-    }
-
-    .card {
-      position: relative;
-      background: #2c2c2c;
-      border-radius: var(--card-radius);
-      overflow: hidden;
-      aspect-ratio: 9/14;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      transition: transform 0.1s;
-      user-select: none;
-      cursor: pointer;
-    }
-
-    .card:active { transform: scale(0.985); }
-
-    .card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .card-content {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
-      padding: 20px 10px 10px 10px;
-      box-sizing: border-box;
-    }
-
-    .name {
-      font-size: 16px;
-      font-weight: 600;
-      display: block;
-    }
-
-    .role {
-      font-size: 12px;
-      color: #cccccc;
-      margin-top: 2px;
-      display: block;
-    }
-
-    .delete-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(0,0,0,0.55);
-      color: white;
-      border: none;
-      border-radius: 999px;
-      width: 32px;
-      height: 32px;
-      font-size: 14px;
-      cursor: pointer;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .fab {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      background-color: white;
-      color: black;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      font-size: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      border: none;
-      cursor: pointer;
-      z-index: 100;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(5px);
-      padding: 16px;
-      box-sizing: border-box;
-    }
-
-    .modal[aria-hidden="false"] { display: flex; }
-
-    .modal-content {
-      background: #1e1e1e;
-      padding: 18px 18px 16px 18px;
-      border-radius: 20px;
-      width: 100%;
-      max-width: 340px;
-      text-align: center;
-      box-sizing: border-box;
-    }
-
-    .modal-title {
-      margin: 0 0 8px 0;
-      font-size: 18px;
-    }
-
-    .hint {
-      margin: 0 0 10px 0;
-      font-size: 12px;
-      color: #aaaaaa;
-      line-height: 1.25;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #333;
-      color: white;
-      box-sizing: border-box;
-      outline: none;
-    }
-
-    .modal-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    button.action-btn {
-      flex: 1;
-      padding: 11px;
-      border-radius: 10px;
-      border: none;
-      font-weight: 800;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .btn-cancel { background: #444; color: white; }
-    .btn-save { background: white; color: black; }
-
-    .empty-state {
-      grid-column: span 2;
-      text-align: center;
-      color: #777;
-      margin-top: 50px;
-      line-height: 1.3;
-      padding: 0 10px;
-    }
-  </style>
-</head>
-
-<body>
-  <h1>Minha Galeria</h1>
-
-  <div class="topbar">
-    <input class="search" id="searchInput" type="text" placeholder="Buscar por nome ou cargo" autocomplete="off" />
-    <button class="mini-btn" id="exportBtn" type="button">Exportar</button>
-    <button class="mini-btn" id="importBtn" type="button">Importar</button>
-    <input id="importFile" type="file" accept="application/json" style="display:none" />
-  </div>
-
-  <div class="grid" id="peopleGrid"></div>
-
-  <button class="fab" id="openModalBtn" aria-label="Adicionar pessoa">+</button>
-
-  <div class="modal" id="addModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Pessoa">
-    <div class="modal-content" id="modalContent">
-      <h3 class="modal-title" id="modalTitle">Nova Pessoa</h3>
-      <p class="hint" id="modalHint">Foto obrigatória ao adicionar. Ao editar, a foto é opcional.</p>
-
-      <input type="file" id="photoInput" accept="image/*" />
-      <input type="text" id="nameInput" placeholder="Nome (ex: Alex Stevano)" autocomplete="off" />
-      <input type="text" id="roleInput" placeholder="Cargo (ex: Software Engineer)" autocomplete="off" />
-
-      <div class="modal-buttons">
-        <button class="action-btn btn-cancel" id="cancelBtn" type="button">Cancelar</button>
-        <button class="action-btn btn-save" id="saveBtn" type="button">Salvar</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const DB_NAME = "people_gallery_db";
-    const DB_VERSION = 1;
-    const STORE = "people";
-
-    const IMG_MAX_WIDTH = 720;
-    const IMG_JPEG_QUALITY = 0.78;
-
-    const grid = document.getElementById("peopleGrid");
-    const modal = document.getElementById("addModal");
-    const modalContent = document.getElementById("modalContent");
-    const modalTitle = document.getElementById("modalTitle");
-    const modalHint = document.getElementById("modalHint");
-
-    const openModalBtn = document.getElementById("openModalBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-    const saveBtn = document.getElementById("saveBtn");
-
-    const photoInput = document.getElementById("photoInput");
-    const nameInput = document.getElementById("nameInput");
-    const roleInput = document.getElementById("roleInput");
-
-    const searchInput = document.getElementById("searchInput");
-    const exportBtn = document.getElementById("exportBtn");
-    const importBtn = document.getElementById("importBtn");
-    const importFile = document.getElementById("importFile");
-
-    let db = null;
-    let peopleCache = [];
-    let editingId = null;
-
-    let objectUrls = [];
-
-    function revokeAllObjectUrls() {
-      for (const url of objectUrls) URL.revokeObjectURL(url);
-      objectUrls = [];
-    }
-
-    function openDB() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-
-        req.onupgradeneeded = (e) => {
-          const dbi = e.target.result;
-          if (!dbi.objectStoreNames.contains(STORE)) {
-            const os = dbi.createObjectStore(STORE, { keyPath: "id", autoIncrement: true });
-            os.createIndex("name", "name", { unique: false });
-            os.createIndex("role", "role", { unique: false });
-            os.createIndex("createdAt", "createdAt", { unique: false });
-          }
-        };
-
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error || new Error("Falha ao abrir banco."));
-      });
-    }
-
-    function tx(storeName, mode = "readonly") {
-      const t = db.transaction(storeName, mode);
-      return t.objectStore(storeName);
-    }
-
-    function getAllPeople() {
-      return new Promise((resolve, reject) => {
-        const os = tx(STORE, "readonly");
-        const req = os.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => reject(req.error || new Error("Falha ao carregar dados."));
-      });
-    }
-
-    function addPersonToDB(person) {
-      return new Promise((resolve, reject) => {
-        const os = tx(STORE, "readwrite");
-        const req = os.add(person);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error || new Error("Falha ao salvar pessoa."));
-      });
-    }
-
-    function updatePersonInDB(person) {
-      return new Promise((resolve, reject) => {
-        const os = tx(STORE, "readwrite");
-        const req = os.put(person);
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error || new Error("Falha ao atualizar pessoa."));
-      });
-    }
-
-    function deletePersonFromDB(id) {
-      return new Promise((resolve, reject) => {
-        const os = tx(STORE, "readwrite");
-        const req = os.delete(id);
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error || new Error("Falha ao remover pessoa."));
-      });
-    }
-
-    function getPersonById(id) {
-      return new Promise((resolve, reject) => {
-        const os = tx(STORE, "readonly");
-        const req = os.get(id);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => reject(req.error || new Error("Falha ao ler pessoa."));
-      });
-    }
-
-    function blobToDataURL(blob) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error("Falha ao ler imagem."));
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-    }
-
-    function dataURLToBlob(dataURL) {
-      const parts = dataURL.split(",");
-      const meta = parts[0];
-      const base64 = parts[1];
-      const mime = (meta.match(/data:(.*);base64/) || [])[1] || "image/jpeg";
-      const binary = atob(base64);
-      const len = binary.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-      return new Blob([bytes], { type: mime });
-    }
-
-    function fileToCompressedJpegBlob(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error("Falha ao ler arquivo."));
-        reader.onload = () => {
-          const img = new Image();
-          img.onerror = () => reject(new Error("Imagem inválida."));
-          img.onload = () => {
-            const scale = Math.min(1, IMG_MAX_WIDTH / img.width);
-            const w = Math.round(img.width * scale);
-            const h = Math.round(img.height * scale);
-
-            const canvas = document.createElement("canvas");
-            canvas.width = w;
-            canvas.height = h;
-
-            const ctx = canvas.getContext("2d", { alpha: false });
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = "high";
-            ctx.drawImage(img, 0, 0, w, h);
-
-            canvas.toBlob(
-              (blob) => {
-                if (!blob) return reject(new Error("Falha ao comprimir imagem."));
-                resolve(blob);
-              },
-              "image/jpeg",
-              IMG_JPEG_QUALITY
-            );
-          };
-          img.src = reader.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function normalizeText(s) {
-      return (s || "").toString().trim();
-    }
-
-    function filterPeople(list, query) {
-      const q = normalizeText(query).toLowerCase();
-      if (!q) return list;
-      return list.filter(p => {
-        const name = (p.name || "").toLowerCase();
-        const role = (p.role || "").toLowerCase();
-        return name.includes(q) || role.includes(q);
-      });
-    }
-
-    function render() {
-      revokeAllObjectUrls();
-      grid.innerHTML = "";
-
-      const filtered = filterPeople(peopleCache, searchInput.value);
-
-      if (!filtered.length) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.innerHTML = peopleCache.length
-          ? "Nada encontrado.<br>Tente outro termo na busca."
-          : "Ninguém cadastrado.<br>Toque no + para adicionar.";
-        grid.appendChild(empty);
-        return;
-      }
-
-      filtered.forEach((person) => {
-        const card = document.createElement("div");
-        card.className = "card";
-
-        const del = document.createElement("button");
-        del.className = "delete-btn";
-        del.type = "button";
-        del.setAttribute("aria-label", "Remover pessoa");
-        del.textContent = "✕";
-        del.addEventListener("click", async (ev) => {
-          ev.stopPropagation();
-          if (!confirm("Remover esta pessoa?")) return;
-          await deletePersonFromDB(person.id);
-          await refreshCacheAndRender();
-        });
-
-        const img = document.createElement("img");
-        const url = URL.createObjectURL(person.photoBlob);
-        objectUrls.push(url);
-        img.src = url;
-        img.alt = person.name || "Pessoa";
-
-        const content = document.createElement("div");
-        content.className = "card-content";
-
-        const nameEl = document.createElement("span");
-        nameEl.className = "name";
-        nameEl.textContent = person.name || "";
-
-        const roleEl = document.createElement("span");
-        roleEl.className = "role";
-        roleEl.textContent = person.role || "";
-
-        content.appendChild(nameEl);
-        content.appendChild(roleEl);
-
-        card.appendChild(del);
-        card.appendChild(img);
-        card.appendChild(content);
-
-        card.addEventListener("click", () => openModalForEdit(person.id));
-
-        grid.appendChild(card);
-      });
-    }
-
-    async function refreshCacheAndRender() {
-      peopleCache = await getAllPeople();
-      peopleCache.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      render();
-    }
-
-    function openModal(mode) {
-      modal.setAttribute("aria-hidden", "false");
-      if (mode === "edit") {
-        modalTitle.textContent = "Editar Pessoa";
-        modalHint.textContent = "Se quiser, troque a foto. Se não, pode deixar como está.";
-      } else {
-        modalTitle.textContent = "Nova Pessoa";
-        modalHint.textContent = "Foto obrigatória ao adicionar. Ao editar, a foto é opcional.";
-      }
-      setTimeout(() => nameInput.focus(), 0);
-    }
-
-    function closeModal() {
-      modal.setAttribute("aria-hidden", "true");
-      editingId = null;
-      nameInput.value = "";
-      roleInput.value = "";
-      photoInput.value = "";
-      saveBtn.disabled = false;
-      saveBtn.textContent = "Salvar";
-    }
-
-    function openModalForAdd() {
-      editingId = null;
-      nameInput.value = "";
-      roleInput.value = "";
-      photoInput.value = "";
-      openModal("add");
-    }
-
-    async function openModalForEdit(id) {
-      const person = await getPersonById(id);
-      if (!person) return;
-
-      editingId = id;
-      nameInput.value = person.name || "";
-      roleInput.value = person.role || "";
-      photoInput.value = "";
-      openModal("edit");
-    }
-
-    async function savePerson() {
-      const name = normalizeText(nameInput.value);
-      const role = normalizeText(roleInput.value);
-      const files = photoInput.files;
-
-      if (!name) {
-        alert("Digite um nome.");
-        return;
-      }
-
-      saveBtn.disabled = true;
-      saveBtn.textContent = "Salvando...";
-
-      try {
-        if (editingId === null) {
-          if (!files || files.length === 0) {
-            alert("Adicione uma foto para cadastrar.");
-            saveBtn.disabled = false;
-            saveBtn.textContent = "Salvar";
-            return;
-          }
-
-          const photoBlob = await fileToCompressedJpegBlob(files[0]);
-
-          const newPerson = {
-            name,
-            role,
-            photoBlob,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          };
-
-          await addPersonToDB(newPerson);
-          await refreshCacheAndRender();
-          closeModal();
+<script>
+  const DB_NAME = "people_gallery_db";
+  const DB_VERSION = 2;
+  const STORE = "people";
+
+  const IMG_MAX_WIDTH = 720;
+  const IMG_JPEG_QUALITY = 0.78;
+
+  const grid = document.getElementById("peopleGrid");
+  const modal = document.getElementById("addModal");
+  const modalContent = document.getElementById("modalContent");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalHint = document.getElementById("modalHint");
+
+  const openModalBtn = document.getElementById("openModalBtn");
+  const cancelBtn = document.getElementById("cancelBtn");
+  const saveBtn = document.getElementById("saveBtn");
+
+  const photoInput = document.getElementById("photoInput");
+  const nameInput = document.getElementById("nameInput");
+  const referenceInput = document.getElementById("referenceInput");
+
+  const searchInput = document.getElementById("searchInput");
+  const exportBtn = document.getElementById("exportBtn");
+  const importBtn = document.getElementById("importBtn");
+  const importFile = document.getElementById("importFile");
+
+  let db = null;
+  let peopleCache = [];
+  let editingId = null;
+
+  let objectUrls = [];
+  let organizeMode = false;
+
+  // Topbar: adiciona botão Organizar
+  const topbar = document.querySelector(".topbar");
+  const organizeBtn = document.createElement("button");
+  organizeBtn.className = "mini-btn";
+  organizeBtn.type = "button";
+  organizeBtn.id = "organizeBtn";
+  organizeBtn.textContent = "Organizar";
+  topbar.insertBefore(organizeBtn, exportBtn);
+
+  function revokeAllObjectUrls() {
+    for (const url of objectUrls) URL.revokeObjectURL(url);
+    objectUrls = [];
+  }
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+      req.onupgradeneeded = (e) => {
+        const dbi = e.target.result;
+
+        if (!dbi.objectStoreNames.contains(STORE)) {
+          const os = dbi.createObjectStore(STORE, { keyPath: "id", autoIncrement: true });
+          os.createIndex("name", "name", { unique: false });
+          os.createIndex("reference", "reference", { unique: false });
+          os.createIndex("order", "order", { unique: false });
+          os.createIndex("createdAt", "createdAt", { unique: false });
           return;
         }
 
-        const existing = await getPersonById(editingId);
-        if (!existing) {
-          alert("Não encontrei essa pessoa para editar.");
+        // Migração v1 -> v2: garantir índices novos
+        const os = req.transaction.objectStore(STORE);
+        if (!os.indexNames.contains("reference")) os.createIndex("reference", "reference", { unique: false });
+        if (!os.indexNames.contains("order")) os.createIndex("order", "order", { unique: false });
+      };
+
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("Falha ao abrir banco."));
+    });
+  }
+
+  function tx(storeName, mode = "readonly") {
+    const t = db.transaction(storeName, mode);
+    return t.objectStore(storeName);
+  }
+
+  function getAllPeople() {
+    return new Promise((resolve, reject) => {
+      const os = tx(STORE, "readonly");
+      const req = os.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error || new Error("Falha ao carregar dados."));
+    });
+  }
+
+  function addPersonToDB(person) {
+    return new Promise((resolve, reject) => {
+      const os = tx(STORE, "readwrite");
+      const req = os.add(person);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("Falha ao salvar pessoa."));
+    });
+  }
+
+  function updatePersonInDB(person) {
+    return new Promise((resolve, reject) => {
+      const os = tx(STORE, "readwrite");
+      const req = os.put(person);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error || new Error("Falha ao atualizar pessoa."));
+    });
+  }
+
+  function deletePersonFromDB(id) {
+    return new Promise((resolve, reject) => {
+      const os = tx(STORE, "readwrite");
+      const req = os.delete(id);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error || new Error("Falha ao remover pessoa."));
+    });
+  }
+
+  function getPersonById(id) {
+    return new Promise((resolve, reject) => {
+      const os = tx(STORE, "readonly");
+      const req = os.get(id);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error || new Error("Falha ao ler pessoa."));
+    });
+  }
+
+  function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Falha ao ler imagem."));
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function dataURLToBlob(dataURL) {
+    const parts = dataURL.split(",");
+    const meta = parts[0];
+    const base64 = parts[1];
+    const mime = (meta.match(/data:(.*);base64/) || [])[1] || "image/jpeg";
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  function fileToCompressedJpegBlob(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Falha ao ler arquivo."));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("Imagem inválida."));
+        img.onload = () => {
+          const scale = Math.min(1, IMG_MAX_WIDTH / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+
+          const ctx = canvas.getContext("2d", { alpha: false });
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, w, h);
+
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return reject(new Error("Falha ao comprimir imagem."));
+              resolve(blob);
+            },
+            "image/jpeg",
+            IMG_JPEG_QUALITY
+          );
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function normalizeText(s) {
+    return (s || "").toString().trim();
+  }
+
+  function normalizeForSearch(s) {
+    return normalizeText(s)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function filterPeople(list, query) {
+    const q = normalizeForSearch(query);
+    if (!q) return list;
+    return list.filter(p => {
+      const name = normalizeForSearch(p.name || "");
+      const ref = normalizeForSearch(p.reference || p.role || "");
+      return name.includes(q) || ref.includes(q);
+    });
+  }
+
+  function sortPeople(list) {
+    // order menor aparece primeiro. Se não existir, cai para createdAt
+    return list.slice().sort((a, b) => {
+      const ao = Number.isFinite(a.order) ? a.order : (a.createdAt || 0);
+      const bo = Number.isFinite(b.order) ? b.order : (b.createdAt || 0);
+      return ao - bo;
+    });
+  }
+
+  function render() {
+    revokeAllObjectUrls();
+    grid.innerHTML = "";
+
+    const sorted = sortPeople(peopleCache);
+    const filtered = filterPeople(sorted, searchInput.value);
+
+    if (!filtered.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.innerHTML = peopleCache.length
+        ? "Nada encontrado.<br>Tente outro termo na busca."
+        : "Ninguém cadastrado.<br>Toque no + para adicionar.";
+      grid.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach((person, idx) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const del = document.createElement("button");
+      del.className = "delete-btn";
+      del.type = "button";
+      del.setAttribute("aria-label", "Remover pessoa");
+      del.textContent = "✕";
+      del.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        if (!confirm("Remover esta pessoa?")) return;
+        await deletePersonFromDB(person.id);
+        await refreshCacheAndRender();
+      });
+
+      const img = document.createElement("img");
+      if (person.photoBlob) {
+        const url = URL.createObjectURL(person.photoBlob);
+        objectUrls.push(url);
+        img.src = url;
+      } else {
+        img.src = "";
+      }
+      img.alt = person.name || "Pessoa";
+
+      const content = document.createElement("div");
+      content.className = "card-content";
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "name";
+      nameEl.textContent = person.name || "";
+
+      const refEl = document.createElement("span");
+      refEl.className = "role";
+      refEl.textContent = person.reference || person.role || "";
+
+      content.appendChild(nameEl);
+      content.appendChild(refEl);
+
+      card.appendChild(del);
+      card.appendChild(img);
+      card.appendChild(content);
+
+      // Organizar: setas simples para mudar posição
+      if (organizeMode) {
+        const controls = document.createElement("div");
+        controls.style.position = "absolute";
+        controls.style.left = "8px";
+        controls.style.top = "8px";
+        controls.style.display = "flex";
+        controls.style.gap = "6px";
+        controls.style.zIndex = "20";
+
+        const up = document.createElement("button");
+        up.type = "button";
+        up.textContent = "↑";
+        up.style.width = "32px";
+        up.style.height = "32px";
+        up.style.borderRadius = "999px";
+        up.style.border = "none";
+        up.style.background = "rgba(0,0,0,0.55)";
+        up.style.color = "white";
+        up.style.cursor = "pointer";
+
+        const down = document.createElement("button");
+        down.type = "button";
+        down.textContent = "↓";
+        down.style.width = "32px";
+        down.style.height = "32px";
+        down.style.borderRadius = "999px";
+        down.style.border = "none";
+        down.style.background = "rgba(0,0,0,0.55)";
+        down.style.color = "white";
+        down.style.cursor = "pointer";
+
+        up.addEventListener("click", async (ev) => {
+          ev.stopPropagation();
+          await moveByIndex(person.id, -1, filtered);
+        });
+
+        down.addEventListener("click", async (ev) => {
+          ev.stopPropagation();
+          await moveByIndex(person.id, +1, filtered);
+        });
+
+        controls.appendChild(up);
+        controls.appendChild(down);
+        card.appendChild(controls);
+
+        // No modo organizar, tocar no card não abre edição
+      } else {
+        card.addEventListener("click", () => openModalForEdit(person.id));
+      }
+
+      grid.appendChild(card);
+    });
+  }
+
+  async function moveByIndex(id, delta, currentFilteredList) {
+    // Move na lista ordenada filtrada, o que você está vendo
+    const list = currentFilteredList;
+    const i = list.findIndex(p => p.id === id);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= list.length) return;
+
+    const a = list[i];
+    const b = list[j];
+
+    const ao = Number.isFinite(a.order) ? a.order : (a.createdAt || 0);
+    const bo = Number.isFinite(b.order) ? b.order : (b.createdAt || 0);
+
+    // troca os orders
+    a.order = bo;
+    b.order = ao;
+
+    await updatePersonInDB(a);
+    await updatePersonInDB(b);
+
+    await refreshCacheAndRender();
+  }
+
+  async function refreshCacheAndRender() {
+    peopleCache = await getAllPeople();
+
+    // Migração automática de dados antigos:
+    // role -> reference
+    // criar order se não existir
+    let changed = false;
+
+    // Define uma base de order crescente
+    const sortedByTime = peopleCache.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    for (let i = 0; i < sortedByTime.length; i++) {
+      const p = sortedByTime[i];
+
+      if (!p.reference && p.role) {
+        p.reference = p.role;
+        changed = true;
+      }
+
+      if (!Number.isFinite(p.order)) {
+        p.order = i + 1;
+        changed = true;
+      }
+
+      // Se alguém estiver sem photoBlob mas tiver photoDataURL, repara
+      if (!p.photoBlob && p.photoDataURL) {
+        try {
+          p.photoBlob = dataURLToBlob(p.photoDataURL);
+          delete p.photoDataURL;
+          changed = true;
+        } catch {}
+      }
+
+      if (changed) {
+        // atualiza só se mexeu em algo
+        await updatePersonInDB(p);
+        changed = false;
+      }
+    }
+
+    // recarrega limpo depois das atualizações
+    peopleCache = await getAllPeople();
+    render();
+  }
+
+  function openModal(mode) {
+    modal.setAttribute("aria-hidden", "false");
+    if (mode === "edit") {
+      modalTitle.textContent = "Editar Pessoa";
+      modalHint.textContent = "A foto só muda se você escolher um novo arquivo.";
+    } else {
+      modalTitle.textContent = "Nova Pessoa";
+      modalHint.textContent = "Foto obrigatória ao adicionar. Ao editar, é opcional.";
+    }
+    setTimeout(() => nameInput.focus(), 0);
+  }
+
+  function closeModal() {
+    modal.setAttribute("aria-hidden", "true");
+    editingId = null;
+    nameInput.value = "";
+    referenceInput.value = "";
+    photoInput.value = "";
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Salvar";
+  }
+
+  function openModalForAdd() {
+    editingId = null;
+    nameInput.value = "";
+    referenceInput.value = "";
+    photoInput.value = "";
+    openModal("add");
+  }
+
+  async function openModalForEdit(id) {
+    const person = await getPersonById(id);
+    if (!person) return;
+
+    editingId = id;
+    nameInput.value = person.name || "";
+    referenceInput.value = person.reference || person.role || "";
+    photoInput.value = "";
+    openModal("edit");
+  }
+
+  async function savePerson() {
+    const name = normalizeText(nameInput.value);
+    const reference = normalizeText(referenceInput.value);
+    const files = photoInput.files;
+
+    if (!name) {
+      alert("Digite um nome.");
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Salvando...";
+
+    try {
+      if (editingId === null) {
+        if (!files || files.length === 0) {
+          alert("Adicione uma foto para cadastrar.");
           saveBtn.disabled = false;
           saveBtn.textContent = "Salvar";
           return;
         }
 
-        let photoBlob = existing.photoBlob;
-        if (files && files.length > 0) {
-          photoBlob = await fileToCompressedJpegBlob(files[0]);
-        }
+        const photoBlob = await fileToCompressedJpegBlob(files[0]);
+        const maxOrder = peopleCache.reduce((m, p) => Math.max(m, Number.isFinite(p.order) ? p.order : 0), 0);
 
-        const updated = {
-          ...existing,
+        const newPerson = {
           name,
-          role,
+          reference,
           photoBlob,
-          updatedAt: Date.now()
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          order: maxOrder + 1
         };
 
-        await updatePersonInDB(updated);
+        await addPersonToDB(newPerson);
         await refreshCacheAndRender();
         closeModal();
-      } catch (e) {
-        alert("Não foi possível salvar. Tente novamente.");
+        return;
+      }
+
+      const existing = await getPersonById(editingId);
+      if (!existing) {
+        alert("Não encontrei essa pessoa para editar.");
         saveBtn.disabled = false;
         saveBtn.textContent = "Salvar";
+        return;
       }
-    }
 
-    async function exportBackup() {
-      try {
-        exportBtn.disabled = true;
-        exportBtn.textContent = "Gerando...";
-
-        const all = await getAllPeople();
-        all.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-
-        const payload = [];
-        for (const p of all) {
-          const photoDataURL = await blobToDataURL(p.photoBlob);
-          payload.push({
-            name: p.name || "",
-            role: p.role || "",
-            photoDataURL,
-            createdAt: p.createdAt || Date.now(),
-            updatedAt: p.updatedAt || Date.now()
-          });
-        }
-
-        const backup = {
-          version: 1,
-          exportedAt: new Date().toISOString(),
-          people: payload
-        };
-
-        const blob = new Blob([JSON.stringify(backup)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-        a.href = url;
-        a.download = `galeria-backup-${stamp}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        alert("Falha ao exportar backup.");
-      } finally {
-        exportBtn.disabled = false;
-        exportBtn.textContent = "Exportar";
+      // Aqui está a correção principal:
+      // foto só muda se tiver arquivo novo
+      let photoBlob = existing.photoBlob;
+      if (files && files.length > 0 && files[0]) {
+        photoBlob = await fileToCompressedJpegBlob(files[0]);
       }
+
+      const updated = {
+        ...existing,
+        name,
+        reference,
+        // mantém compatibilidade se existir role antigo
+        role: undefined,
+        photoBlob,
+        updatedAt: Date.now()
+      };
+
+      await updatePersonInDB(updated);
+      await refreshCacheAndRender();
+      closeModal();
+    } catch (e) {
+      alert("Não foi possível salvar. Tente novamente.");
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Salvar";
     }
+  }
 
-    async function importBackupFromFile(file) {
-      try {
-        importBtn.disabled = true;
-        importBtn.textContent = "Lendo...";
+  async function exportBackup() {
+    try {
+      exportBtn.disabled = true;
+      exportBtn.textContent = "Gerando...";
 
-        const text = await file.text();
-        const data = JSON.parse(text);
+      const all = await getAllPeople();
+      const sorted = sortPeople(all);
 
-        if (!data || !Array.isArray(data.people)) {
-          alert("Arquivo inválido.");
-          return;
-        }
-
-        const toAdd = data.people
-          .map(p => ({
-            name: normalizeText(p.name),
-            role: normalizeText(p.role),
-            photoDataURL: p.photoDataURL,
-            createdAt: p.createdAt || Date.now(),
-            updatedAt: p.updatedAt || Date.now()
-          }))
-          .filter(p => p.name && p.photoDataURL);
-
-        if (!toAdd.length) {
-          alert("Não encontrei pessoas válidas nesse backup.");
-          return;
-        }
-
-        if (!confirm(`Importar ${toAdd.length} pessoa(s)? Isso não apaga as atuais.`)) return;
-
-        for (const p of toAdd) {
-          const blob = dataURLToBlob(p.photoDataURL);
-          const f = new File([blob], "import.jpg", { type: blob.type || "image/jpeg" });
-          const photoBlob = await fileToCompressedJpegBlob(f);
-
-          await addPersonToDB({
-            name: p.name,
-            role: p.role,
-            photoBlob,
-            createdAt: p.createdAt,
-            updatedAt: p.updatedAt
-          });
-        }
-
-        await refreshCacheAndRender();
-        alert("Importação concluída.");
-      } catch (e) {
-        alert("Falha ao importar. Confira se é um JSON válido.");
-      } finally {
-        importBtn.disabled = false;
-        importBtn.textContent = "Importar";
-        importFile.value = "";
+      const payload = [];
+      for (const p of sorted) {
+        const photoDataURL = p.photoBlob ? await blobToDataURL(p.photoBlob) : "";
+        payload.push({
+          name: p.name || "",
+          reference: p.reference || p.role || "",
+          photoDataURL,
+          createdAt: p.createdAt || Date.now(),
+          updatedAt: p.updatedAt || Date.now(),
+          order: Number.isFinite(p.order) ? p.order : null
+        });
       }
+
+      const backup = {
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        people: payload
+      };
+
+      const blob = new Blob([JSON.stringify(backup)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      a.href = url;
+      a.download = `galeria-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Falha ao exportar backup.");
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.textContent = "Exportar";
     }
+  }
 
-    function setupModalUX() {
-      openModalBtn.addEventListener("click", openModalForAdd);
-      cancelBtn.addEventListener("click", closeModal);
-      saveBtn.addEventListener("click", savePerson);
+  async function importBackupFromFile(file) {
+    try {
+      importBtn.disabled = true;
+      importBtn.textContent = "Lendo...";
 
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-      });
+      const text = await file.text();
+      const data = JSON.parse(text);
 
-      modalContent.addEventListener("click", (e) => e.stopPropagation());
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && modal.getAttribute("aria-hidden") === "false") {
-          closeModal();
-        }
-      });
-    }
-
-    function setupTopbarUX() {
-      searchInput.addEventListener("input", () => render());
-
-      exportBtn.addEventListener("click", exportBackup);
-
-      importBtn.addEventListener("click", () => importFile.click());
-
-      importFile.addEventListener("change", async () => {
-        const f = importFile.files && importFile.files[0];
-        if (!f) return;
-        await importBackupFromFile(f);
-      });
-    }
-
-    async function init() {
-      try {
-        db = await openDB();
-        setupModalUX();
-        setupTopbarUX();
-        await refreshCacheAndRender();
-      } catch (e) {
-        alert("Seu navegador bloqueou o banco local. Tente em outro navegador.");
+      if (!data || !Array.isArray(data.people)) {
+        alert("Arquivo inválido.");
+        return;
       }
-    }
 
-    init();
-  </script>
-</body>
-</html>
+      const toAdd = data.people
+        .map(p => ({
+          name: normalizeText(p.name),
+          reference: normalizeText(p.reference || p.role),
+          photoDataURL: p.photoDataURL,
+          createdAt: p.createdAt || Date.now(),
+          updatedAt: p.updatedAt || Date.now(),
+          order: Number.isFinite(p.order) ? p.order : null
+        }))
+        .filter(p => p.name && p.photoDataURL);
+
+      if (!toAdd.length) {
+        alert("Não encontrei pessoas válidas nesse backup.");
+        return;
+      }
+
+      if (!confirm(`Importar ${toAdd.length} pessoa(s)? Isso não apaga as atuais.`)) return;
+
+      const maxOrder = peopleCache.reduce((m, p) => Math.max(m, Number.isFinite(p.order) ? p.order : 0), 0);
+      let cursorOrder = maxOrder + 1;
+
+      for (const p of toAdd) {
+        const blob = dataURLToBlob(p.photoDataURL);
+        const f = new File([blob], "import.jpg", { type: blob.type || "image/jpeg" });
+        const photoBlob = await fileToCompressedJpegBlob(f);
+
+        await addPersonToDB({
+          name: p.name,
+          reference: p.reference,
+          photoBlob,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+          order: p.order ?? cursorOrder++
+        });
+      }
+
+      await refreshCacheAndRender();
+      alert("Importação concluída.");
+    } catch (e) {
+      alert("Falha ao importar. Confira se é um JSON válido.");
+    } finally {
+      importBtn.disabled = false;
+      importBtn.textContent = "Importar";
+      importFile.value = "";
+    }
+  }
+
+  function setupModalUX() {
+    openModalBtn.addEventListener("click", openModalForAdd);
+    cancelBtn.addEventListener("click", closeModal);
+    saveBtn.addEventListener("click", savePerson);
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    modalContent.addEventListener("click", (e) => e.stopPropagation());
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.getAttribute("aria-hidden") === "false") {
+        closeModal();
+      }
+    });
+  }
+
+  function setupTopbarUX() {
+    searchInput.addEventListener("input", () => render());
+    exportBtn.addEventListener("click", exportBackup);
+    importBtn.addEventListener("click", () => importFile.click());
+
+    importFile.addEventListener("change", async () => {
+      const f = importFile.files && importFile.files[0];
+      if (!f) return;
+      await importBackupFromFile(f);
+    });
+
+    organizeBtn.addEventListener("click", () => {
+      organizeMode = !organizeMode;
+      organizeBtn.textContent = organizeMode ? "Concluir" : "Organizar";
+      render();
+    });
+  }
+
+  async function init() {
+    try {
+      db = await openDB();
+      setupModalUX();
+      setupTopbarUX();
+      await refreshCacheAndRender();
+    } catch (e) {
+      alert("Seu navegador bloqueou o banco local. Tente em outro navegador.");
+    }
+  }
+
+  init();
+</script>
+
