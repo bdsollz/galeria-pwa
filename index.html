@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Minha Galeria</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#121212">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+--safe-top:env(safe-area-inset-top,20px);
+--safe-right:env(safe-area-inset-right,20px);
+--safe-bottom:env(safe-area-inset-bottom,30px);
+--safe-left:env(safe-area-inset-left,20px);
+}
+body{margin:0;background:#121212;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;color:#fff;-webkit-font-smoothing:antialiased}
+h1{padding:calc(var(--safe-top) + 10px) var(--safe-left) 20px;margin:0}
+.topbar{position:fixed;top:var(--safe-top);right:var(--safe-right);z-index:999}
+.gear{background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gear:active{background:rgba(0,0,0,.8)}
+.menu{position:absolute;top:50px;right:0;background:#1e1e1e;border-radius:12px;padding:10px;display:none;flex-direction:column;gap:8px;width:170px;box-shadow:0 8px 16px rgba(0,0,0,.5)}
+.menu button{background:#2c2c2c;border:none;color:#fff;padding:12px;border-radius:8px;min-height:44px;cursor:pointer;font-size:14px}
+.menu button:active{background:#3c3c3c}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 12px calc(var(--safe-bottom) + 80px)}
+.card{position:relative;background:#1e1e1e;border-radius:16px;overflow:hidden;aspect-ratio:9/14}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card-bottom{position:absolute;bottom:0;width:100%;padding:20px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.9),rgba(0,0,0,0));pointer-events:none}
+.name{font-weight:600;font-size:15px;word-break:break-word}
+.ref{font-size:12px;color:#ccc;word-break:break-word}
+.edit-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:50%;width:44px;height:44px;font-size:16px;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent}
+.edit-btn:active{background:rgba(0,0,0,.9)}
+.fab{position:fixed;bottom:var(--safe-bottom);right:var(--safe-right);width:60px;height:60px;border-radius:50%;background:#fff;color:#000;font-size:30px;border:none;box-shadow:0 4px 12px rgba(0,0,0,.5);cursor:pointer;z-index:100;-webkit-tap-highlight-color:transparent}
+.fab:active{transform:scale(0.95)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal-content{background:#1e1e1e;padding:20px;border-radius:20px;width:90%;max-width:400px;max-height:85vh;overflow-y:auto}
+.modal-content h3{margin-top:0}
+input[type="text"]{width:100%;margin:10px 0;padding:12px;border-radius:8px;border:none;background:#333;color:#fff;font-size:16px;box-sizing:border-box}
+input[type="file"]{margin:10px 0;color:#fff}
+.btn-group{display:flex;gap:8px;margin-top:15px}
+.btn-group button{flex:1;padding:12px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;min-height:44px}
+.btn-primary{background:#007aff;color:#fff}
+.btn-primary:active{background:#0051d5}
+.btn-secondary{background:#333;color:#fff}
+.btn-secondary:active{background:#444}
+.carousel-container{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;width:100%;height:100%;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.carousel-container img{width:100%;flex-shrink:0;scroll-snap-align:center;object-fit:contain;display:block}
+.close-modal{position:absolute;top:var(--safe-top);right:var(--safe-right);width:44px;height:44px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;font-size:24px;cursor:pointer;z-index:10}
+.close-modal:active{background:rgba(0,0,0,.8)}
+.carousel-dots{position:absolute;bottom:calc(var(--safe-bottom) + 20px);left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);transition:background .3s}
+.dot.active{background:#fff;width:20px;border-radius:4px}
+.loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.8);padding:20px 30px;border-radius:12px;color:#fff;font-size:14px;z-index:2000;display:none}
+.photo-preview{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.photo-preview img{width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #333}
+.empty-state{text-align:center;padding:60px 20px;color:#666}
+.empty-state div{font-size:48px;margin-bottom:10px}
+.quota-warning{background:#664400;color:#ffb84d;padding:8px 12px;border-radius:8px;font-size:12px;margin:10px 0}
+</style>
+</head>
+<body>
+
+<h1>Minha Galeria</h1>
+
+<div class="topbar">
+<button class="gear" onclick="toggleMenu()" aria-label="Configurações">⚙</button>
+<div class="menu" id="menu" role="menu">
+<button onclick="exportBackup()" role="menuitem">Exportar Backup</button>
+<button onclick="document.getElementById('importFile').click()" role="menuitem">Importar Backup</button>
+<input type="file" id="importFile" accept=".json" hidden onchange="importBackup(event)" aria-label="Selecionar arquivo de backup">
+</div>
+</div>
+
+<div class="grid" id="grid"></div>
+<button class="fab" onclick="openEdit()" aria-label="Adicionar pessoa">+</button>
+
+<div class="modal" id="editModal" role="dialog" aria-labelledby="editTitle">
+<div class="modal-content">
+<h3 id="editTitle">Nova Pessoa</h3>
+<div id="quotaWarning" class="quota-warning" style="display:none"></div>
+<input type="text" id="nameInput" placeholder="Nome" aria-label="Nome da pessoa">
+<input type="text" id="refInput" placeholder="Referência" aria-label="Referência">
+<input type="file" id="photoInput" multiple accept="image/*" aria-label="Selecionar fotos (máximo 5)">
+<div class="photo-preview" id="photoPreview"></div>
+<div class="btn-group">
+<button class="btn-secondary" onclick="closeEdit()">Cancelar</button>
+<button class="btn-primary" onclick="savePerson()">Salvar</button>
+</div>
+</div>
+</div>
+
+<div class="modal" id="viewModal" role="dialog" aria-label="Visualizar fotos">
+<button class="close-modal" onclick="closeView()" aria-label="Fechar">×</button>
+<div class="carousel-container" id="carousel"></div>
+<div class="carousel-dots" id="carouselDots"></div>
+</div>
+
+<div class="loading" id="loading">Processando...</div>
+
+<script>
+let db;
+let editingId=null;
+let currentPhotos=[];
+
+// ✅ Inicialização segura do IndexedDB
+const request=indexedDB.open("galeriaDB",1);
+
+request.onerror=e=>{
+  console.error("Erro ao abrir IndexedDB:",e);
+  alert("Erro ao inicializar banco de dados. Tente recarregar o app.");
+};
+
+request.onupgradeneeded=e=>{
+  db=e.target.result;
+  if(!db.objectStoreNames.contains("people")){
+    db.createObjectStore("people",{keyPath:"id",autoIncrement:true});
+  }
+};
+
+request.onsuccess=e=>{
+  db=e.target.result;
+  render();
+  checkStorageQuota();
+};
+
+// ✅ Menu com fechamento ao clicar fora
+function toggleMenu(){
+  const m=document.getElementById("menu");
+  const isOpen=m.style.display==="flex";
+  m.style.display=isOpen?"none":"flex";
+  
+  if(!isOpen){
+    setTimeout(()=>{
+      document.addEventListener("click",closeMenuOutside,{once:true});
+    },100);
+  }
+}
+
+function closeMenuOutside(e){
+  const menu=document.getElementById("menu");
+  const gear=document.querySelector(".gear");
+  if(!menu.contains(e.target) && !gear.contains(e.target)){
+    menu.style.display="none";
+  }
+}
+
+// ✅ Compressão de imagem com tratamento de erro
+function compressImage(file){
+  return new Promise((resolve,reject)=>{
+    if(!file.type.startsWith("image/")){
+      reject(new Error("Arquivo não é uma imagem"));
+      return;
+    }
+    
+    const img=new Image();
+    const reader=new FileReader();
+    
+    const timeout=setTimeout(()=>{
+      reject(new Error("Timeout ao processar imagem"));
+    },30000);
+    
+    reader.onerror=()=>{
+      clearTimeout(timeout);
+      reject(new Error("Erro ao ler arquivo"));
+    };
+    
+    reader.onload=e=>{
+      img.onerror=()=>{
+        clearTimeout(timeout);
+        reject(new Error("Erro ao carregar imagem"));
+      };
+      
+      img.onload=()=>{
+        clearTimeout(timeout);
+        try{
+          const canvas=document.createElement("canvas");
+          let max=1000,w=img.width,h=img.height;
+          
+          if(w>h && w>max){h*=max/w;w=max}
+          if(h>w && h>max){w*=max/h;h=max}
+          
+          canvas.width=w;
+          canvas.height=h;
+          canvas.getContext("2d").drawImage(img,0,0,w,h);
+          
+          const compressed=canvas.toDataURL("image/jpeg",0.75);
+          
+          // ✅ Verificar tamanho (limite ~2MB por imagem)
+          if(compressed.length > 2*1024*1024){
+            reject(new Error("Imagem muito grande mesmo após compressão"));
+            return;
+          }
+          
+          resolve(compressed);
+        }catch(err){
+          reject(err);
+        }
+      };
+      img.src=e.target.result;
+    };
+    
+    reader.readAsDataURL(file);
+  });
+}
+
+// ✅ Renderização com estado vazio
+function render(){
+  if(!db){
+    console.warn("DB ainda não inicializado");
+    return;
+  }
+  
+  const tx=db.transaction("people","readonly").objectStore("people").getAll();
+  tx.onerror=e=>console.error("Erro ao buscar dados:",e);
+  
+  tx.onsuccess=e=>{
+    const data=e.target.result;
+    const grid=document.getElementById("grid");
+    grid.innerHTML="";
+    
+    if(data.length===0){
+      grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1">
+        <div>📸</div>
+        <div>Nenhuma pessoa cadastrada</div>
+        <div style="font-size:14px;margin-top:8px">Toque no + para adicionar</div>
+      </div>`;
+      return;
+    }
+    
+    data.forEach(p=>{
+      const card=document.createElement("div");
+      card.className="card";
+      const imgSrc=p.photos?.[0]||'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>';
+      card.innerHTML=`
+        <button class="edit-btn" onclick="openEdit(${p.id})" aria-label="Editar ${p.name||'pessoa'}">✏</button>
+        <img src="${imgSrc}" onclick="openView(${p.id})" alt="${p.name||'Foto'}" loading="lazy">
+        <div class="card-bottom">
+          <div class="name">${escapeHtml(p.name||'Sem nome')}</div>
+          <div class="ref">${escapeHtml(p.reference||'')}</div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  };
+}
+
+// ✅ Escape HTML para prevenir XSS
+function escapeHtml(text){
+  const div=document.createElement("div");
+  div.textContent=text;
+  return div.innerHTML;
+}
+
+// ✅ Salvamento com validação completa
+async function savePerson(){
+  if(!db){
+    alert("Banco de dados não inicializado");
+    return;
+  }
+  
+  const name=document.getElementById("nameInput").value.trim();
+  const reference=document.getElementById("refInput").value.trim();
+  
+  if(!name){
+    alert("Por favor, preencha o nome");
+    return;
+  }
+  
+  showLoading(true);
+  
+  try{
+    const files=[...document.getElementById("photoInput").files];
+    let existingPhotos=[];
+    
+    if(editingId){
+      const existing=await new Promise((res,rej)=>{
+        const t=db.transaction("people","readonly").objectStore("people").get(editingId);
+        t.onsuccess=e=>res(e.target.result);
+        t.onerror=e=>rej(e);
+      });
+      existingPhotos=existing?.photos||[];
+    }
+    
+    let newPhotos=[];
+    for(const f of files){
+      try{
+        const compressed=await compressImage(f);
+        newPhotos.push(compressed);
+      }catch(err){
+        console.error("Erro ao comprimir:",err);
+        alert(`Erro ao processar imagem: ${err.message}`);
+        showLoading(false);
+        return;
+      }
+    }
+    
+    // ✅ Evitar duplicatas por conteúdo
+    const allPhotos=[...existingPhotos,...newPhotos];
+    const uniquePhotos=[...new Set(allPhotos)].slice(0,5);
+    
+    const person={name,reference,photos:uniquePhotos};
+    if(editingId) person.id=editingId;
+    
+    await new Promise((res,rej)=>{
+      const tx=db.transaction("people","readwrite");
+      const store=tx.objectStore("people");
+      
+      const req=editingId ? store.put(person) : store.add(person);
+      
+      req.onsuccess=()=>res();
+      req.onerror=e=>{
+        if(e.target.error.name==="QuotaExceededError"){
+          rej(new Error("Limite de armazenamento excedido"));
+        }else{
+          rej(e.target.error);
+        }
+      };
+    });
+    
+    closeEdit();
+    render();
+    checkStorageQuota();
+    
+  }catch(err){
+    console.error("Erro ao salvar:",err);
+    if(err.message.includes("armazenamento")){
+      alert("Limite de armazenamento excedido. Exporte um backup e remova algumas pessoas ou fotos.");
+    }else{
+      alert(`Erro ao salvar: ${err.message}`);
+    }
+  }finally{
+    showLoading(false);
+  }
+}
+
+// ✅ Abertura de edição com carregamento de dados
+async function openEdit(id=null){
+  if(!db){
+    alert("Banco de dados não inicializado");
+    return;
+  }
+  
+  editingId=id;
+  currentPhotos=[];
+  document.getElementById("photoPreview").innerHTML="";
+  document.getElementById("photoInput").value="";
+  
+  const title=document.getElementById("editTitle");
+  
+  if(id){
+    title.textContent="Editar Pessoa";
+    
+    const tx=db.transaction("people","readonly").objectStore("people").get(id);
+    tx.onsuccess=e=>{
+      const p=e.target.result;
+      if(p){
+        document.getElementById("nameInput").value=p.name||'';
+        document.getElementById("refInput").value=p.reference||'';
+        currentPhotos=p.photos||[];
+        updatePhotoPreview();
+      }
+    };
+  }else{
+    title.textContent="Nova Pessoa";
+    document.getElementById("nameInput").value='';
+    document.getElementById("refInput").value='';
+  }
+  
+  document.getElementById("editModal").style.display="flex";
+}
+
+function closeEdit(){
+  editingId=null;
+  currentPhotos=[];
+  document.getElementById("photoInput").value="";
+  document.getElementById("photoPreview").innerHTML="";
+  document.getElementById("editModal").style.display="none";
+  document.getElementById("quotaWarning").style.display="none";
+}
+
+// ✅ Preview de fotos existentes
+function updatePhotoPreview(){
+  const preview=document.getElementById("photoPreview");
+  preview.innerHTML="";
+  currentPhotos.forEach((src,i)=>{
+    const img=document.createElement("img");
+    img.src=src;
+    img.alt=`Foto ${i+1}`;
+    preview.appendChild(img);
+  });
+}
+
+// ✅ Visualização com indicadores e fechamento correto
+function openView(id){
+  if(!db) return;
+  
+  const tx=db.transaction("people","readonly").objectStore("people").get(id);
+  tx.onsuccess=e=>{
+    const p=e.target.result;
+    if(!p||!p.photos||p.photos.length===0) return;
+    
+    const carousel=document.getElementById("carousel");
+    const dots=document.getElementById("carouselDots");
+    carousel.innerHTML="";
+    dots.innerHTML="";
+    
+    p.photos.forEach((src,i)=>{
+      const img=document.createElement("img");
+      img.src=src;
+      img.alt=`Foto ${i+1} de ${p.photos.length}`;
+      carousel.appendChild(img);
+      
+      const dot=document.createElement("div");
+      dot.className="dot"+(i===0?" active":"");
+      dots.appendChild(dot);
+    });
+    
+    carousel.onscroll=updateDots;
+    document.getElementById("viewModal").style.display="flex";
+  };
+}
+
+function closeView(){
+  document.getElementById("viewModal").style.display="none";
+}
+
+// ✅ Atualização de indicadores do carrossel
+function updateDots(){
+  const carousel=document.getElementById("carousel");
+  const dots=document.querySelectorAll(".dot");
+  const index=Math.round(carousel.scrollLeft/carousel.offsetWidth);
+  
+  dots.forEach((dot,i)=>{
+    dot.classList.toggle("active",i===index);
+  });
+}
+
+// ✅ Export com tratamento de erro
+function exportBackup(){
+  if(!db){
+    alert("Banco de dados não inicializado");
+    return;
+  }
+  
+  showLoading(true);
+  
+  const tx=db.transaction("people","readonly").objectStore("people").getAll();
+  
+  tx.onerror=e=>{
+    console.error("Erro ao exportar:",e);
+    alert("Erro ao exportar dados");
+    showLoading(false);
+  };
+  
+  tx.onsuccess=e=>{
+    try{
+      const data=e.target.result;
+      const json=JSON.stringify(data,null,2);
+      const blob=new Blob([json],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      const date=new Date().toISOString().split("T")[0];
+      a.href=url;
+      a.download=`backup-galeria-${date}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      document.getElementById("menu").style.display="none";
+    }catch(err){
+      console.error("Erro ao criar backup:",err);
+      alert("Erro ao criar arquivo de backup");
+    }finally{
+      showLoading(false);
+    }
+  };
+}
+
+// ✅ Import com validação e backup automático
+async function importBackup(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  
+  if(!confirm("Importar irá SUBSTITUIR todos os dados atuais. Tem certeza?")){
+    event.target.value="";
+    return;
+  }
+  
+  showLoading(true);
+  
+  const reader=new FileReader();
+  
+  reader.onerror=()=>{
+    alert("Erro ao ler arquivo");
+    showLoading(false);
+    event.target.value="";
+  };
+  
+  reader.onload=async e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      
+      // ✅ Validação do formato
+      if(!Array.isArray(data)){
+        throw new Error("Formato de backup inválido");
+      }
+      
+      // ✅ Validação de estrutura
+      for(const item of data){
+        if(!item.name && !item.reference && !item.photos){
+          throw new Error("Dados corrompidos no backup");
+        }
+      }
+      
+      // ✅ Fazer backup automático antes de importar
+      const currentData=await new Promise((res,rej)=>{
+        const tx=db.transaction("people","readonly").objectStore("people").getAll();
+        tx.onsuccess=e=>res(e.target.result);
+        tx.onerror=e=>rej(e);
+      });
+      
+      if(currentData.length>0){
+        localStorage.setItem("autoBackup",JSON.stringify({
+          date:new Date().toISOString(),
+          data:currentData
+        }));
+      }
+      
+      // ✅ Importar com validação
+      await new Promise((res,rej)=>{
+        const tx=db.transaction("people","readwrite");
+        const store=tx.objectStore("people");
+        
+        const clearReq=store.clear();
+        clearReq.onerror=e=>rej(e);
+        
+        clearReq.onsuccess=()=>{
+          let errors=0;
+          data.forEach((p,i)=>{
+            const addReq=store.add({
+              name:p.name||'',
+              reference:p.reference||'',
+              photos:(p.photos||[]).slice(0,5)
+            });
+            addReq.onerror=()=>errors++;
+            if(i===data.length-1){
+              addReq.onsuccess=()=>res({errors});
+            }
+          });
+        };
+      });
+      
+      render();
+      document.getElementById("menu").style.display="none";
+      alert("Backup importado com sucesso!");
+      
+    }catch(err){
+      console.error("Erro ao importar:",err);
+      alert(`Erro ao importar backup: ${err.message}`);
+    }finally{
+      showLoading(false);
+      event.target.value="";
+    }
+  };
+  
+  reader.readAsText(file);
+}
+
+// ✅ Verificação de quota de armazenamento
+async function checkStorageQuota(){
+  if(!navigator.storage||!navigator.storage.estimate) return;
+  
+  try{
+    const estimate=await navigator.storage.estimate();
+    const percentUsed=(estimate.usage/estimate.quota)*100;
+    
+    const warning=document.getElementById("quotaWarning");
+    
+    if(percentUsed>80){
+      warning.textContent=`⚠️ Armazenamento ${percentUsed.toFixed(0)}% cheio. Considere exportar backup e limpar dados antigos.`;
+      warning.style.display="block";
+    }else{
+      warning.style.display="none";
+    }
+  }catch(err){
+    console.error("Erro ao verificar quota:",err);
+  }
+}
+
+function showLoading(show){
+  document.getElementById("loading").style.display=show?"block":"none";
+}
+
+// ✅ Registro do Service Worker
+if("serviceWorker"in navigator){
+  navigator.serviceWorker.register("sw.js").catch(err=>{
+    console.error("Erro ao registrar SW:",err);
+  });
+}
+
+// ✅ Detectar perda de foco e salvar estado (iOS específico)
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){
+    checkStorageQuota();
+  }
+});
+</script>
+
+</body>
+</html>
